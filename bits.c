@@ -1,7 +1,7 @@
 /* 
  * CS:APP Data Lab 
  * 
- * <Please put your name and userid here>
+ * <唐笑添25803020032>
  * 
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -146,7 +146,7 @@ NOTES:
  *   Rating: 1
  */
 int signMask(void) {
-  return 1;
+  return 1 << 31;
 }
 
 // P2
@@ -158,7 +158,7 @@ int signMask(void) {
  *   Rating: 2
  */
 int bitXor(int x, int y) {
-	return 2;
+	return ~(~x & ~y) & ~(x & y);
 }
 
 // P3
@@ -170,7 +170,7 @@ int bitXor(int x, int y) {
  *   Rating: 3
  */
 int negativePart(int x){
-  return 3;
+  return (x >> 31) & (~x + 1);
 }
 
 
@@ -185,7 +185,7 @@ int negativePart(int x){
  *   Rating: 4
  */
 int copyByteWithin(int x, int src, int dst) {
-  return 4;
+  return ((x >> (src << 3)) & 0xFF) << (dst << 3) | (x & ~(0xFF << (dst << 3)));
 }
 
 // P5
@@ -198,7 +198,7 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
-  return 5;
+  return (x >> n) & ~(((1 << 31) >> n) << 1);
 }
 
 // P6
@@ -210,7 +210,9 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int swapNibblePairs(int x) {
-  return 6;
+  int maskA = 0x0F | (0x0F << 8) | (0x0F << 16) | (0x0F << 24);
+  int maskB = maskA << 4;
+  return ((x & maskA) << 4) | (((x & maskB) >> 4) & maskA);
 }
 
 // P7
@@ -223,7 +225,9 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
-  return 7;
+  int lowest_zero = ~x & (x + 1);
+  int x2 = x | lowest_zero;
+  return ~x2 & (x2 + 1);
 }
 
 // P8
@@ -236,7 +240,12 @@ int secondLowestZeroBit(int x) {
  *   Rating: 5
  */
 int oddParity(int x) {
-  return 8;
+  x = x ^ (x >> 16);
+  x = x ^ (x >> 8);
+  x = x ^ (x >> 4);
+  x = x ^ (x >> 2);
+  x = x ^ (x >> 1);
+  return (x & 1) ^ 1;
 }
 
 // P9
@@ -249,7 +258,10 @@ int oddParity(int x) {
  *   Rating: 5
  */
 int rotateRightBits(int x, int n) {
-  return 9;
+  n = (n & 31);
+  int logical_right = ( (x >> n) & (~( (((1 << 31) >> n) << 1) )) );
+  int wrap_left = ( x << ( ((~n) + 1) & 31 ) );
+  return (logical_right | wrap_left);
 }
 
 // P10
@@ -264,7 +276,10 @@ int rotateRightBits(int x, int n) {
  *   Rating: 5
  */
 int roundEvenPow2(int x, int n) {
-  return 10;
+  int bias = ((1 << n) >> 1) + ~0;
+  x = x + bias;
+  x = x + ((x >> n) & 1);
+  return (x >> n) << n;
 }
 
 // P11
@@ -280,7 +295,26 @@ int roundEvenPow2(int x, int n) {
  *   Rating: 5
  */
 int midpointTowardFirst(int x, int y) {
-  return 11;
+  int and_val = x & y;
+  int xor_val = x ^ y;
+  int base = and_val + (xor_val >> 1);
+
+  int is_odd = xor_val & 1;
+
+  int sign_x = x >> 31;
+  int sign_y = y >> 31;
+  int diff_sign = sign_x ^ sign_y;
+
+  int x_gt_y_diff = 1 + sign_x;
+
+  int diff_same = x + ~y + 1; 
+  int x_gt_y_same = 1 + (diff_same >> 31); 
+
+  int x_gt_y = (diff_sign & x_gt_y_diff) | (~diff_sign & x_gt_y_same);
+  
+  int adjustment = is_odd & x_gt_y;
+  
+  return base + adjustment;
 }
 
 
@@ -294,7 +328,31 @@ int midpointTowardFirst(int x, int y) {
  *   Rating: 7
  */
 int isBetweenEitherOrder(int x, int a, int b) {
-  return 12;
+  int sign_x = x >> 31;
+  int sign_a = a >> 31;
+  int sign_b = b >> 31;
+
+  int diff_xa = x + ~a + 1;
+  int diff_ax = ~diff_xa + 1;
+  int diff_bx = b + ~x + 1;
+  int diff_xb = ~diff_bx + 1;
+
+  int diff_sign_xa = sign_x ^ sign_a;
+  int diff_sign_bx = sign_b ^ sign_x;
+
+  int less_xa = (diff_sign_xa & sign_x) | (~diff_sign_xa & (diff_xa >> 31));
+  int ge_xa = !less_xa;
+
+  int less_bx = (diff_sign_bx & sign_b) | (~diff_sign_bx & (diff_bx >> 31));
+  int ge_bx = !less_bx;
+
+  int less_xb = (diff_sign_bx & sign_x) | (~diff_sign_bx & (diff_xb >> 31));
+  int ge_xb = !less_xb;
+
+  int less_ax = (diff_sign_xa & sign_a) | (~diff_sign_xa & (diff_ax >> 31));
+  int ge_ax = !less_ax;
+
+  return (ge_xa & ge_bx) | (ge_xb & ge_ax);
 }
 
 // P13
@@ -307,11 +365,30 @@ int isBetweenEitherOrder(int x, int a, int b) {
  *   Rating: 7
  */
 int mul5Sat(int x) {
-  return 13;
+  int x5 = (x << 2) + x;
+  int sx = x >> 31;
+
+  int a = 0x99 | (0x99 << 8);
+  int L = a | (a << 16);
+  L = L ^ (1 << 31);
+
+  int diff_pos = x + ~L + 1;
+  int pos_ov = ~sx & ~(diff_pos >> 31) & !!diff_pos;
+
+  int diff_neg = x + L;
+  int neg_ov = sx & (diff_neg >> 31);
+
+  int is_ov = pos_ov | neg_ov;
+
+  int mask = is_ov << 31 >> 31;
+
+  int sat_val = ~sx ^ (1 << 31);
+
+  return (mask & sat_val) | (~mask & x5);
 }
 
 // P14
-/* 
+/*
  * classifyAdd3 - classify the exact mathematical sum x+y+z.
  *   Return 1 if the sum is greater than INT_MAX, -1 if it is less than
  *   INT_MIN, and 0 otherwise. You may not use a wider integer type.
@@ -320,7 +397,25 @@ int mul5Sat(int x) {
  *   Rating: 7
  */
 int classifyAdd3(int x, int y, int z) {
-  return 14;
+  int sum_xy = x + y;
+  int sum_xyz = sum_xy + z;
+
+  int sign_x = x >> 31;
+  int sign_y = y >> 31;
+  int sign_z = z >> 31;
+  int sign_sum_xy = sum_xy >> 31;
+  int sign_sum_xyz = sum_xyz >> 31;
+
+  int pos_ov_xy = ~sign_x & ~sign_y & sign_sum_xy;
+  int neg_ov_xy = sign_x & sign_y & ~sign_sum_xy;
+
+  int pos_ov_xyz = ~sign_sum_xy & ~sign_z & sign_sum_xyz;
+  int neg_ov_xyz = sign_sum_xy & sign_z & ~sign_sum_xyz;
+
+  int pos = pos_ov_xy | pos_ov_xyz;
+  int neg = neg_ov_xy | neg_ov_xyz;
+
+  return neg + ~pos + 1; 
 }
 
 // P15
@@ -337,7 +432,55 @@ int classifyAdd3(int x, int y, int z) {
  *   Rating: 7
  */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  return 15;
+  unsigned s = uf >> 31;
+  unsigned exp = (uf >> 23) & 0xFF;
+  unsigned frac = uf & 0x7FFFFF;
+
+  if (exp == 255)
+  {
+    return uf;
+  }
+
+  if (exp == 0)
+  {
+    if (frac == 0)
+    {
+      return uf;
+    }
+
+    unsigned prod = 3 * frac; 
+    unsigned m_new = (prod >> 1) + ((prod & 1) & ((prod >> 1) & 1));
+
+    if (m_new >= (1 << 23))
+    {
+      exp = 1;
+      frac = m_new - (1 << 23);
+    }
+    else
+    {
+      frac = m_new;
+    }
+    
+    return (s << 31) | (exp << 23) | frac;
+  }
+
+  unsigned m = (1 << 23) | frac;
+  unsigned prod = 3 * m; 
+  unsigned m_new = (prod >> 1) + ((prod & 1) & ((prod >> 1) & 1));
+
+  if (m_new >= (1 << 24))
+  {
+    m_new = (m_new >> 1) + ((m_new & 1) & ((m_new >> 1) & 1));
+    exp++;
+  }
+
+  if (exp >= 255)
+  {
+    return (s << 31) | 0x7F800000;
+  }
+
+  frac = m_new & 0x7FFFFF;
+  return (s << 31) | (exp << 23) | frac;
 }
 
 // P16
@@ -353,7 +496,70 @@ unsigned floatScaleThreeHalves(unsigned uf) {
  *   Rating: 10
  */
 unsigned floatRoundEven(unsigned uf) {
-  return 16;
+  unsigned s = uf >> 31;
+  unsigned exp = (uf >> 23) & 0xFF;
+  unsigned frac = uf & 0x7FFFFF;
+
+  if (exp == 255)
+  {
+    return uf;
+  }
+
+  if (exp < 126)
+  {
+    return s << 31;
+  }
+
+  if (exp == 126)
+  {
+    if (frac == 0)
+    {
+      return s << 31;
+    }
+    else
+    {
+      return (s << 31) | (127 << 23);
+    }
+  }
+
+  if (exp >= 150)
+  {
+    return uf;
+  }
+
+  unsigned m = (1 << 23) | frac;
+  unsigned shift = 150 - exp;
+  unsigned int_part = m >> shift;
+  unsigned frac_part = m & ((1 << shift) - 1);
+  unsigned half = 1 << (shift - 1);
+
+  if (frac_part > half)
+  {
+    int_part++;
+  }
+  else if (frac_part == half)
+  {
+    if (int_part & 1)
+    {
+      int_part++;
+    }
+  }
+
+  if (int_part == 0)
+  {
+    return s << 31;
+  }
+
+  int hb = 0;
+  while ((int_part >> hb) > 1)
+  {
+    hb++;
+  }
+  
+  unsigned exp_new = hb + 127;
+  unsigned frac_new = (int_part << (23 - hb)) & 0x7FFFFF;
+  
+  return (s << 31) | (exp_new << 23) | frac_new;
 }
 
 // P17
@@ -367,7 +573,44 @@ unsigned floatRoundEven(unsigned uf) {
  *   Rating: 10
  */
 unsigned float_i2f(int x) {
-  return 17;
+  if (x == 0)
+  {
+    return 0;
+  }
+  int sign = x >> 31;
+  unsigned abs_x = (x + sign) ^ sign;
+  
+  int E = 0;
+  unsigned temp = abs_x;
+  while (temp >> 1)
+  {
+    temp >>= 1;
+    E++;
+  }
+  
+  int exp = E + 127;
+  unsigned frac = 0;
+  
+  if (E <= 23)
+  {
+    frac = (abs_x << (23 - E)) & 0x7FFFFF;
+  }
+  else
+  {
+    int shift = E - 23;
+    frac = (abs_x >> shift) & 0x7FFFFF;
+    unsigned round_part = abs_x & ((1 << shift) - 1);
+    unsigned half = 1 << (shift - 1);
+    if (round_part > half || (round_part == half && (frac & 1)))
+    {
+      frac++;
+      if (frac == (1 << 23)) {
+        frac = 0;
+        exp++;
+      }
+    }
+  }
+  return (sign << 31) | (exp << 23) | frac;
 }
 
 
@@ -380,20 +623,52 @@ unsigned float_i2f(int x) {
  *   Max ops: 40
  *   Rating: 10
  */
-int bitCount(int x) {
-  return 18;
+int bitCount(int x)
+{
+  int m1 = 0x55 | (0x55 << 8);
+  m1 = m1 | (m1 << 16);
+  int m2 = 0x33 | (0x33 << 8);
+  m2 = m2 | (m2 << 16);
+  int m4 = 0x0F | (0x0F << 8);
+  m4 = m4 | (m4 << 16);
+  int m8 = 0xFF | (0xFF << 16);
+
+  x = (x & m1) + ((x >> 1) & m1);
+  x = (x & m2) + ((x >> 2) & m2);
+  x = (x & m4) + ((x >> 4) & m4);
+  x = (x & m8) + ((x >> 8) & m8);
+  x = (x & 0xFF) + (x >> 16);
+  
+  return x & 0xFF;
 }
 
 // P19
 /*
- * bitReverse - Reverse bits in an 32-bit integer
+ * bitReverse - Reverse bits in a 32-bit integer
  *   Examples: bitReverse(0x80000004) = 0x20000001
  *             bitReverse(0x7FFFFFFF) = 0xFFFFFFFE
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 34
  *   Rating: 10
  */
-int bitReverse(int x)
-{
-  return 19;
+int bitReverse(int x) {
+  int m4 = 0x0F | (0x0F << 8);
+  m4 = m4 | (m4 << 16);
+
+  int m2 = m4 ^ (m4 << 2);
+  int m1 = m2 ^ (m2 << 1);
+  int m8 = 0xFF | (0xFF << 16);
+  int m16 = 0xFF | (0xFF << 8);
+
+  x = ((x & m1) << 1) | ((x >> 1) & m1);
+
+  x = ((x & m2) << 2) | ((x >> 2) & m2);
+
+  x = ((x & m4) << 4) | ((x >> 4) & m4);
+
+  x = ((x & m8) << 8) | ((x >> 8) & m8);
+
+  x = (x << 16) | ((x >> 16) & m16);
+
+  return x;
 }
